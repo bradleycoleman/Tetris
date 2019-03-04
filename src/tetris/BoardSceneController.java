@@ -1,4 +1,4 @@
-package sample;
+package tetris;
 
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
@@ -8,6 +8,7 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
+import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -55,10 +56,8 @@ public class BoardSceneController {
         TimerTask timerTask = new TimerTask() {
             @Override
             public void run() {
-                // this will attempt to move the current piece down one square each second. if it cannot then it will
-                // attempt to add a new piece. if that is not possible then the game will end.
                 if (!_activePiece.moveDown()) {
-                    Boolean lineFull = true;
+                    boolean lineFull;
                     for (int j = 0; j < ROWS; j++) {
                         lineFull = true;
                         for (int i = 0; i < COLS; i++) {
@@ -71,10 +70,26 @@ public class BoardSceneController {
                         }
                     }
                     try {
-                        _activePiece = new IPiece(_squares);
+                        Random r = new Random();
+                        switch (r.nextInt(6)) {
+                            case 0: _activePiece = new IPiece(_squares);
+                            break;
+                            case 1: _activePiece = new JPiece(_squares);
+                            break;
+                            case 2: _activePiece = new LPiece(_squares);
+                            break;
+                            case 3: _activePiece = new SPiece(_squares);
+                            break;
+                            case 4: _activePiece = new TPiece(_squares);
+                            break;
+                            case 5: _activePiece = new ZPiece(_squares);
+                            break;
+                            case 6: _activePiece = new OPiece(_squares);
+                            break;
+                        }
                     } catch (ArrayIndexOutOfBoundsException e) {
-                        System.out.println("game over man");
-                        // TODO: make something happen when the game ends.
+                        cancel();
+                        System.out.println("This runs?");
                     }
                 }
             }
