@@ -4,6 +4,8 @@ package tetris;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
+import static tetris.BoardSceneController.BLANKCOLOUR;
+
 /**
  * This represents the active piece in the game of tetris. The piece is confined within a grid of squares _dim x _dim.
  * The top left corner square of this grid is at the listed _xOrd and _yOrd on the grid _squares. The shape of the
@@ -18,7 +20,6 @@ public abstract class Tetrimino {
     private Angle _orientation;
     private Rectangle[][] _squares;
     private static final Angle[] ANGLES = Angle.values();
-    private static final Color BLANKCOLOUR = Color.WHITE;
     private int[][] _coOrds;
 
     protected enum Angle {UP, RIGHT, DOWN, LEFT}
@@ -83,7 +84,7 @@ public abstract class Tetrimino {
         repaint(BLANKCOLOUR);
         _orientation = ANGLES[(_orientation.ordinal() + 1) % ANGLES.length];
         if (!checkValid()) {
-            _orientation = ANGLES[(_orientation.ordinal() - 1) % ANGLES.length];
+            _orientation = ANGLES[(_orientation.ordinal() + 3) % ANGLES.length];
         }
         repaint(_colour);
     }
@@ -160,5 +161,6 @@ public abstract class Tetrimino {
         }
         return true;
     }
+
 
 }
