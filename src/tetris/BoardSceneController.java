@@ -5,34 +5,31 @@ import javafx.fxml.FXML;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.GridPane;
-import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import static tetris.TetrisBoard.*;
+
 public class BoardSceneController {
-    public static final int ROWS = 20;
-    private final int COLS = 10;
-    private final int DIM = 20;
+    public static final int ROWS = 22;
+    public static final int COLS = 10;
     private Rectangle[][] _squares;
     private Tetrimino _activePiece;
-    public static Color BLANKCOLOUR = Color.WHITE;
-    @FXML private GridPane _board;
+    private Tetrimino _heldPiece;
+    private Timer _timer;
+    private TetrisBoard _mainBoard;
+    private TetrisBoard _holderBoard;
+    private int _score = 0;
+    @FXML private GridPane _boardPane;
+    @FXML private GridPane _holderPane;
 
     @FXML
     private void initialize() {
-        // A 2D array of rectangles to be coloured
-        _squares = new Rectangle[COLS][ROWS];
-        for (int i = 0; i < COLS; i++) {
-            for (int j = 0; j < ROWS; j++) {
-                _squares[i][j] = new Rectangle(DIM, DIM);
-                _squares[i][j].setFill(BLANKCOLOUR);
-                _squares[i][j].setStroke(Color.BLACK);
-                _board.add(_squares[i][j], i, j);
-            }
-        }
-        _board.setOnKeyPressed(new EventHandler<KeyEvent>() {
+        _mainBoard = new TetrisBoard(_boardPane);
+        _holderBoard = new TetrisBoard(_holderPane);
+        _boardPane.setOnKeyPressed(new EventHandler<KeyEvent>() {
             @Override
             public void handle(KeyEvent event) {
                 if (event.getCode() == KeyCode.DOWN) {
@@ -44,10 +41,22 @@ public class BoardSceneController {
                 } else if (event.getCode() == KeyCode.RIGHT) {
                     _activePiece.moveRight();
                 } else if (event.getCode() == KeyCode.SPACE) {
+                    // this moves the piece to lowest possible position instantly.
                     for (int i=0;i<ROWS;i++) {
                         _activePiece.moveDown();
                     }
                     newPiece();
+                } else if (event.getCode() == KeyCode.SHIFT) {
+                    Tetrimino temp = _activePiece;
+                    if (_heldPiece != null) {
+                        _activePiece = _heldPiece;
+                        _activePiece.setSquares(_mainBoard);
+                    } else {
+                        newPiece();
+                    }
+                    temp.setSquares(_holderBoard);
+                    _heldPiece = temp;
+
                 }
                 event.consume();
             }
@@ -56,67 +65,50 @@ public class BoardSceneController {
 
     @FXML
     public void startGame() {
+        _boardPane.requestFocus();
         newPiece();
-        _board.requestFocus();
         TimerTask timerTask = new TimerTask() {
             @Override
             public void run() {
+                // moves the active piece once down, if the piece has no room to fall then a new piece will be added.
                 if (!_activePiece.moveDown()) {
-                    try {
-                        newPiece();
-                    } catch (ArrayIndexOutOfBoundsException e) {
-                        cancel();
-                    }
+                    newPiece();
                 }
             }
         };
-        Timer timer = new Timer();
-        timer.schedule(timerTask,0, 1000);
+        _timer = new Timer();
+        _timer.schedule(timerTask,0, 1000);
     }
 
     /**
-     * This checks if there are any full lines to remove and then adds a new piece, shifting focus to this new piece.
-     * @throws ArrayIndexOutOfBoundsException Throws this if the piece cannot be added, i.e. if there is no room for
-     * the piece on the board.
+     * This ends focus for the current active piece and puts it on a random new piece. In ending the focus it also
+     * checks if there are any full lines to remove and adds removed lines to the score. If the new piece cannot be
+     * added, then the game will end.
      */
-    private void newPiece() throws ArrayIndexOutOfBoundsException {
-        boolean lineFull;
-        for (int j = 0; j < ROWS; j++) {
-            lineFull = true;
-            for (int i = 0; i < COLS; i++) {
-                if (_squares[i][j].getFill().equals(BLANKCOLOUR)) {
-                    lineFull = false;
-                }
-            }
-            if (lineFull) {
-                removeLine(j);
-            }
-        }
+    private void newPiece() {
+        _score += _mainBoard.removeFullLines();
         Random r = new Random();
-        switch (r.nextInt(7)) {
-            case 0: _activePiece = new IPiece(_squares);
-                break;
-            case 1: _activePiece = new JPiece(_squares);
-                break;
-            case 2: _activePiece = new LPiece(_squares);
-                break;
-            case 3: _activePiece = new SPiece(_squares);
-                break;
-            case 4: _activePiece = new TPiece(_squares);
-                break;
-            case 5: _activePiece = new ZPiece(_squares);
-                break;
-            case 6: _activePiece = new OPiece(_squares);
-                break;
+        try {
+            switch (r.nextInt(7)) {
+                case 0: _activePiece = new IPiece(_mainBoard);
+                    break;
+                case 1: _activePiece = new JPiece(_mainBoard);
+                    break;
+                case 2: _activePiece = new LPiece(_mainBoard);
+                    break;
+                case 3: _activePiece = new SPiece(_mainBoard);
+                    break;
+                case 4: _activePiece = new TPiece(_mainBoard);
+                    break;
+                case 5: _activePiece = new ZPiece(_mainBoard);
+                    break;
+                case 6: _activePiece = new OPiece(_mainBoard);
+                    break;
+            }
+        } catch (ArrayIndexOutOfBoundsException e) {
+            _timer.cancel();
         }
     }
 
-    private void removeLine(int line) {
-        for (int i = 0; i < COLS; i++) {
-            for (int j = line; j > 0; j--) {
-                _squares[i][j].setFill(_squares[i][j-1].getFill());
-            }
-            _squares[i][0].setFill(BLANKCOLOUR);
-        }
-    }
+
 }
