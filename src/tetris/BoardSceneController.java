@@ -1,7 +1,9 @@
 package tetris;
 
+import javafx.application.Platform;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
+import javafx.scene.control.Label;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.GridPane;
@@ -9,8 +11,6 @@ import javafx.scene.shape.Rectangle;
 import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
-
-import static tetris.TetrisBoard.*;
 
 public class BoardSceneController {
     public static final int ROWS = 22;
@@ -22,6 +22,7 @@ public class BoardSceneController {
     private TetrisBoard _mainBoard;
     private TetrisBoard _holderBoard;
     private int _score = 0;
+    @FXML private Label _scoreLabel;
     @FXML private GridPane _boardPane;
     @FXML private GridPane _holderPane;
 
@@ -47,6 +48,8 @@ public class BoardSceneController {
                     }
                     newPiece();
                 } else if (event.getCode() == KeyCode.SHIFT) {
+                    // This stores the active piece in the holderBoard on the right. If there is a piece held already
+                    // then it becomes active otherwise a new piece is added.
                     Tetrimino temp = _activePiece;
                     if (_heldPiece != null) {
                         _activePiece = _heldPiece;
@@ -72,7 +75,9 @@ public class BoardSceneController {
             public void run() {
                 // moves the active piece once down, if the piece has no room to fall then a new piece will be added.
                 if (!_activePiece.moveDown()) {
-                    newPiece();
+                    Platform.runLater(() -> {
+                        newPiece();
+                    });
                 }
             }
         };
@@ -87,6 +92,7 @@ public class BoardSceneController {
      */
     private void newPiece() {
         _score += _mainBoard.removeFullLines();
+        _scoreLabel.setText("SCORE: " + _score);
         Random r = new Random();
         try {
             switch (r.nextInt(7)) {
