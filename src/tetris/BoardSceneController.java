@@ -3,7 +3,9 @@ package tetris;
 import javafx.application.Platform;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.GridPane;
@@ -23,6 +25,10 @@ public class BoardSceneController {
     private TetrisBoard _mainBoard;
     private TetrisBoard _holderBoard;
     private int _score = 0;
+
+    @FXML private Button _startGameButton;
+    @FXML private ListView<String> _highScoresView;
+    @FXML private GridPane _endOverlay;
     @FXML private Label _scoreLabel;
     @FXML private GridPane _boardPane;
     @FXML private GridPane _holderPane;
@@ -31,6 +37,7 @@ public class BoardSceneController {
     private void initialize() {
         _mainBoard = new TetrisBoard(_boardPane);
         _holderBoard = new TetrisBoard(_holderPane);
+        _endOverlay.setVisible(false);
         _boardPane.setOnKeyPressed(new EventHandler<KeyEvent>() {
             @Override
             public void handle(KeyEvent event) {
@@ -73,7 +80,13 @@ public class BoardSceneController {
 
     @FXML
     public void startGame() {
+        _endOverlay.setVisible(false);
+        _startGameButton.setDisable(true);
+        _boardPane.setDisable(false);
         _boardPane.requestFocus();
+        _holderBoard.clearBoard();
+        _mainBoard.clearBoard();
+        _heldPiece = null;
         newPiece();
         TimerTask timerTask = new TimerTask() {
             @Override
@@ -119,6 +132,9 @@ public class BoardSceneController {
             }
         } catch (ArrayIndexOutOfBoundsException e) {
             _timer.cancel();
+            _boardPane.setDisable(true);
+            _endOverlay.setVisible(true);
+            _startGameButton.setDisable(false);
         }
     }
 

@@ -95,4 +95,10 @@ public class TetrisBoard {
     public int getRows() {
         return _rows;
     }
+
+    public void clearBoard() {
+        for (int i = 0; i< _rows; i++) {
+            removeLine(i);
+        }
+    }
 }
