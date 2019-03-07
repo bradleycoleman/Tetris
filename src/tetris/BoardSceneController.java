@@ -15,6 +15,7 @@ import java.util.TimerTask;
 public class BoardSceneController {
     public static final int ROWS = 22;
     public static final int COLS = 10;
+    private boolean _canSwap;
     private Rectangle[][] _squares;
     private Tetrimino _activePiece;
     private Tetrimino _heldPiece;
@@ -42,7 +43,7 @@ public class BoardSceneController {
                 } else if (event.getCode() == KeyCode.RIGHT) {
                     _activePiece.moveRight();
                 } else if (event.getCode() == KeyCode.SPACE) {
-                    // this moves the piece to lowest possible position instantly.
+                    // this moves the piece to lowest possible position and spawns a new piece instantly.
                     for (int i=0;i<ROWS;i++) {
                         _activePiece.moveDown();
                     }
@@ -50,16 +51,20 @@ public class BoardSceneController {
                 } else if (event.getCode() == KeyCode.SHIFT) {
                     // This stores the active piece in the holderBoard on the right. If there is a piece held already
                     // then it becomes active otherwise a new piece is added.
-                    Tetrimino temp = _activePiece;
-                    if (_heldPiece != null) {
-                        _activePiece = _heldPiece;
-                        _activePiece.setSquares(_mainBoard);
-                    } else {
-                        newPiece();
+                    if (_canSwap) {
+                        // only one swap can be done before a new piece is spawned.
+                        _canSwap = false;
+                        Tetrimino temp = _activePiece;
+                        temp.unpaintWithSilhouette();
+                        if (_heldPiece != null) {
+                            _activePiece = _heldPiece;
+                            _activePiece.playOnBoard(_mainBoard);
+                        } else {
+                            newPiece();
+                        }
+                        temp.holdOnBoard(_holderBoard);
+                        _heldPiece = temp;
                     }
-                    temp.setSquares(_holderBoard);
-                    _heldPiece = temp;
-
                 }
                 event.consume();
             }
@@ -91,6 +96,7 @@ public class BoardSceneController {
      * added, then the game will end.
      */
     private void newPiece() {
+        _canSwap = true;
         _score += _mainBoard.removeFullLines();
         _scoreLabel.setText("SCORE: " + _score);
         Random r = new Random();

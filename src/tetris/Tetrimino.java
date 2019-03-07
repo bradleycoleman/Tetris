@@ -32,6 +32,7 @@ public abstract class Tetrimino {
         _dim = dim;
         _coOrds = coOrds;
         _colour = colour;
+        paintWithSilhouette();
         if (!moveDown()) {
             throw new ArrayIndexOutOfBoundsException();
         }
@@ -57,36 +58,56 @@ public abstract class Tetrimino {
      * Moves the piece one index left in the grid. If this is not possible then nothing happens
      */
     public void moveLeft() {
-        repaint(BLANKCOLOUR, false);
+        unpaintWithSilhouette();
         _xOrd--;
         if (!checkValid()) {
             _xOrd++;
         }
-        repaint(_colour, true);
+        paintWithSilhouette();
     }
 
     /**
      * Moves the piece one index right in the grid. If this is not possible then nothing happens
      */
     public void moveRight() {
-        repaint(BLANKCOLOUR, false);
+        unpaintWithSilhouette();
         _xOrd++;
         if (!checkValid()) {
             _xOrd--;
         }
-        repaint(_colour, true);
+        paintWithSilhouette();
     }
 
     /**
      * Rotates the piece in it's square by 90 degrees clockwise.
      */
     public void rotate() {
-        repaint(BLANKCOLOUR, false);
+        unpaintWithSilhouette();
         _orientation = ANGLES[(_orientation.ordinal() + 1) % ANGLES.length];
         if (!checkValid()) {
             _orientation = ANGLES[(_orientation.ordinal() + 3) % ANGLES.length];
         }
-        repaint(_colour, true);
+        paintWithSilhouette();
+    }
+
+    private void paintWithSilhouette() {
+        int initY = _yOrd;
+        for (int i = 0; i < _tetrisBoard.getRows(); i++) {
+            moveDown();
+        }
+        repaint(Color.GREY, false);
+        _yOrd = initY;
+        repaint(_colour,true);
+    }
+
+    public void unpaintWithSilhouette() {
+        int initY = _yOrd;
+        for (int i = 0; i < _tetrisBoard.getRows(); i++) {
+            moveDown();
+        }
+        repaint(BLANKCOLOUR, false);
+        _yOrd = initY;
+        repaint(BLANKCOLOUR,false);
     }
 
     /**
@@ -168,12 +189,19 @@ public abstract class Tetrimino {
      * This method places this tetrimino in the given rectangle matrix.
      * @param board A tetris board.
      */
-    public void setSquares(TetrisBoard board) {
-        repaint(BLANKCOLOUR, false);
+    public void holdOnBoard(TetrisBoard board) {
         _tetrisBoard = board;
-        _xOrd = 0;
-        _yOrd = 0;
-        repaint(_colour, true);
+        _xOrd = board.getCols()/2 - (_dim+1)/2;
+        _yOrd = board.getRows()/2 - (_dim+1)/2;
+        repaint(_colour, false);
+    }
+
+    public void playOnBoard(TetrisBoard board) {
+        unpaintWithSilhouette();
+        _tetrisBoard = board;
+        _xOrd = board.getCols()/2;
+        _yOrd = 1;
+        paintWithSilhouette();
     }
 
 
