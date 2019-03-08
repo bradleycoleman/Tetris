@@ -3,20 +3,19 @@ package tetris;
 import javafx.application.Platform;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
+import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.shape.Rectangle;
-import java.util.Random;
-import java.util.Timer;
-import java.util.TimerTask;
+
+import java.io.*;
+import java.util.*;
 
 public class BoardSceneController {
     public static final int ROWS = 22;
     public static final int COLS = 10;
+    private final File SCORESFILE = new File("src/tetris/scores.txt");
     private boolean _canSwap;
     private Rectangle[][] _squares;
     private Tetrimino _activePiece;
@@ -24,10 +23,11 @@ public class BoardSceneController {
     private Timer _timer;
     private TetrisBoard _mainBoard;
     private TetrisBoard _holderBoard;
+    private List<Score> _scores;
     private int _score = 0;
 
     @FXML private Button _startGameButton;
-    @FXML private ListView<String> _highScoresView;
+    @FXML private ListView<Score> _highScoresView;
     @FXML private GridPane _endOverlay;
     @FXML private Label _scoreLabel;
     @FXML private GridPane _boardPane;
@@ -76,6 +76,9 @@ public class BoardSceneController {
                 event.consume();
             }
         });
+        _scores = new ArrayList<>();
+        readScoresFile();
+        _highScoresView.getItems().setAll(_scores);
     }
 
     @FXML
@@ -83,24 +86,12 @@ public class BoardSceneController {
         _endOverlay.setVisible(false);
         _startGameButton.setDisable(true);
         _boardPane.setDisable(false);
+        _score = 0;
         _boardPane.requestFocus();
         _holderBoard.clearBoard();
         _mainBoard.clearBoard();
         _heldPiece = null;
         newPiece();
-        TimerTask timerTask = new TimerTask() {
-            @Override
-            public void run() {
-                // moves the active piece once down, if the piece has no room to fall then a new piece will be added.
-                if (!_activePiece.moveDown()) {
-                    Platform.runLater(() -> {
-                        newPiece();
-                    });
-                }
-            }
-        };
-        _timer = new Timer();
-        _timer.schedule(timerTask,0, 1000);
     }
 
     /**
@@ -111,6 +102,13 @@ public class BoardSceneController {
     private void newPiece() {
         _canSwap = true;
         _score += _mainBoard.removeFullLines();
+        if (_timer != null) {
+            _timer.cancel();
+        }
+        // every 10 points, the delay is reduced by 10%
+        double speedMultiplier = Math.pow(0.90,(_score/10));
+        _timer = new Timer();
+        _timer.schedule(new DropTask(), 500, (int) (1000 * speedMultiplier));
         _scoreLabel.setText("SCORE: " + _score);
         Random r = new Random();
         try {
@@ -135,8 +133,76 @@ public class BoardSceneController {
             _boardPane.setDisable(true);
             _endOverlay.setVisible(true);
             _startGameButton.setDisable(false);
+            if (_scores.size() < 10 || _score > _scores.get(9).getValue()) {
+                boolean invalidInput = true;
+                while (invalidInput) {
+                    TextInputDialog newName = new TextInputDialog();
+                    newName.setTitle("Enter a Name");
+                    newName.setHeaderText("New High Score!");
+                    newName.setContentText("Please enter a name (less than 10 characters):");
+                    Optional<String> result = newName.showAndWait();
+                    if (result.isPresent() && result.get().length() < 10 && !result.get().contains("~")) {
+                        invalidInput = false;
+                        _scores.add(new Score(result.get(), _score));
+                        updateScoresFile();
+                    } else {
+                        Alert invalidName = new Alert(Alert.AlertType.WARNING);
+                        invalidName.setTitle("Invalid Input");
+                        invalidName.setContentText("The name you entered has too many characters, or contains the character \"~\"\n" +
+                                "Please try again.");
+                        invalidName.showAndWait();
+                    }
+                }
+            }
+            readScoresFile();
+            _highScoresView.getItems().setAll(_scores);
         }
     }
 
+    private void readScoresFile() {
+        _scores.clear();
+        try {
+            BufferedReader reader = new BufferedReader(new FileReader(SCORESFILE));
+            String line;
+            while ((line = reader.readLine())!= null) {
+                String[] splitLine = line.split("~");
+                if (splitLine.length == 2) {
+                    _scores.add(new Score(splitLine[0], Integer.parseInt(splitLine[1])));
+                }
+            }
+            _scores.sort(new Comparator<Score>() {
+                @Override
+                public int compare(Score o1, Score o2) {
+                    return o1.compareTo(o2);
+                }
+            });
+        } catch (IOException e) {
 
+        }
+    }
+
+    private void updateScoresFile() {
+        SCORESFILE.delete();
+        try {
+            SCORESFILE.createNewFile();
+            BufferedWriter writer = new BufferedWriter(new FileWriter(SCORESFILE,true));
+            for (Score score: _scores) {
+                writer.write(score.inFileName());
+            }
+            writer.close();
+        } catch (IOException e) {
+
+        }
+    }
+
+    private class DropTask extends TimerTask {
+        @Override
+        public void run() {
+            if (_activePiece != null && !_activePiece.moveDown()) {
+                Platform.runLater(() -> {
+                    newPiece();
+                });
+            }
+        }
+    }
 }

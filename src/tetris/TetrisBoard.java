@@ -32,6 +32,10 @@ public class TetrisBoard {
         }
     }
 
+    /**
+     * Removes all full rows from the board and moves the rows above them down.
+     * @return The points that should be added the score given the number of lines removed.
+     */
     public int removeFullLines() {
         boolean lineFull;
         int linesRemoved = 0;
@@ -47,8 +51,20 @@ public class TetrisBoard {
                 linesRemoved++;
             }
         }
-        return linesRemoved;
+        if (linesRemoved == 1) {
+            return 1;
+        } else if (linesRemoved == 2) {
+            return 3;
+        } else if (linesRemoved == 3) {
+            return 6;
+        } else if (linesRemoved == 4) {
+            return 10;
+        }
+        // returning more than 4 lines is impossible with default tetriminos - this will only occur if game is modified
+        // to allow tetriminos of length 5+.
+        return 3*linesRemoved;
     }
+
 
     private void removeLine(int line) {
         for (int i = 0; i < _cols; i++) {
