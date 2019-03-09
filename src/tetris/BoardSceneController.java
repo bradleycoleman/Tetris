@@ -199,9 +199,13 @@ public class BoardSceneController {
         @Override
         public void run() {
             if (_activePiece != null && !_activePiece.moveDown()) {
-                Platform.runLater(() -> {
-                    newPiece();
-                });
+                if (_activePiece.isCancelNext()) {
+                    Platform.runLater(() -> {
+                        newPiece();
+                    });
+                } else {
+                    _activePiece.setCancelNext();
+                }
             }
         }
     }

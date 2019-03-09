@@ -21,6 +21,7 @@ public abstract class Tetrimino {
     private TetrisBoard _tetrisBoard;
     private static final Angle[] ANGLES = Angle.values();
     private int[][] _coOrds;
+    private boolean _cancelNext;
 
     protected enum Angle {UP, RIGHT, DOWN, LEFT}
 
@@ -62,6 +63,8 @@ public abstract class Tetrimino {
         _xOrd--;
         if (!checkValid()) {
             _xOrd++;
+        } else {
+            _cancelNext = false;
         }
         paintWithSilhouette();
     }
@@ -74,6 +77,8 @@ public abstract class Tetrimino {
         _xOrd++;
         if (!checkValid()) {
             _xOrd--;
+        } else {
+            _cancelNext = false;
         }
         paintWithSilhouette();
     }
@@ -85,7 +90,21 @@ public abstract class Tetrimino {
         unpaintWithSilhouette();
         _orientation = ANGLES[(_orientation.ordinal() + 1) % ANGLES.length];
         if (!checkValid()) {
-            _orientation = ANGLES[(_orientation.ordinal() + 3) % ANGLES.length];
+            // if the piece can't be rotated it is moved left and right by 1 to see if it can be
+            _xOrd--;
+            if (!checkValid()) {
+                _xOrd += 2;
+                if (!checkValid()) {
+                    _xOrd--;
+                    _orientation = ANGLES[(_orientation.ordinal() + 3) % ANGLES.length];
+                } else {
+                    _cancelNext = false;
+                }
+            } else {
+                _cancelNext = false;
+            }
+        } else {
+            _cancelNext = false;
         }
         paintWithSilhouette();
     }
@@ -204,5 +223,11 @@ public abstract class Tetrimino {
         paintWithSilhouette();
     }
 
+    public void setCancelNext() {
+        _cancelNext = true;
+    }
 
+    public boolean isCancelNext() {
+        return _cancelNext;
+    }
 }
